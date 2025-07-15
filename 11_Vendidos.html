@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leyvo - Ventas</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .venta {
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .venta ul {
+      padding-left: 20px;
+    }
+    .venta img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .venta strong {
+      color: #444;
+    }
+    .info-pedido {
+      margin-bottom: 15px;
+    }
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #btnVolver {
+      display: inline-block;
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    #btnVolver:hover {
+      background-color: #0056b3;
+    }
+    a.whatsapp-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: green;
+      font-weight: bold;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <a href="2_Inicio.html" id="btnVolver">← Volver</a>
+  <h1>Ventas y Compras Realizadas</h1>
+  <div id="ventasContainer">Cargando ventas...</div>
+  <div id="errorMsg" class="error" style="display:none;"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, doc, query, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const ventasContainer = document.getElementById('ventasContainer');
+    const errorMsg = document.getElementById('errorMsg');
+
+    async function obtenerVendedorInfo(uid) {
+      try {
+        const docSnap = await getDoc(doc(db, "usuarios", uid));
+        if (docSnap.exists()) return docSnap.data();
+      } catch (e) {
+        console.warn("No se pudo obtener vendedor:", e);
+      }
+      return null;
+    }
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        ventasContainer.innerHTML = "Debes iniciar sesión para ver tus ventas.";
+        return;
+      }
+
+      const uid = user.uid;
+      try {
+        const ventasRef = collection(db, "ventas");
+        const qComprador = query(ventasRef, where("compradorId", "==", uid));
+        const qVendedor = query(ventasRef, where("ownerIds", "array-contains", uid));
+
+        const [snapshotComprador, snapshotVendedor] = await Promise.all([
+          getDocs(qComprador),
+          getDocs(qVendedor)
+        ]);
+
+        const ventasMap = new Map();
+        snapshotComprador.forEach(doc => ventasMap.set(doc.id, doc.data()));
+        snapshotVendedor.forEach(doc => ventasMap.set(doc.id, doc.data()));
+
+        if (ventasMap.size === 0) {
+          ventasContainer.innerHTML = "<p>No tienes ventas ni compras registradas.</p>";
+          return;
+        }
+
+        ventasContainer.innerHTML = "";
+        for (const [id, venta] of ventasMap.entries()) {
+          const div = document.createElement('div');
+          div.className = "venta";
+
+          const productosHTML = (venta.productos || []).map(p => `
+            <li>
+              ${p.images?.[0] ? `<img src="${p.images[0]}" alt="Producto">` : ""}
+              <strong>${p.name}</strong> - $${p.price} USD
+            </li>
+          `).join("");
+
+          let vendedorHTML = "No disponible";
+          const vendedorId = venta.ownerIds?.[0];
+          if (vendedorId) {
+            const vendedorInfo = await obtenerVendedorInfo(vendedorId);
+            if (vendedorInfo) {
+              const numeroWhatsApp = vendedorInfo.telefono?.replace(/^0/, '');
+              vendedorHTML = `
+                Nombre: ${vendedorInfo.nombre || 'Sin nombre'}<br>
+                Correo: ${vendedorInfo.correo || 'Sin correo'}<br>
+                Teléfono: ${vendedorInfo.telefono || 'Sin teléfono'}
+                ${numeroWhatsApp ? `<br><a class="whatsapp-link" href="https://wa.me/593${numeroWhatsApp}" target="_blank">📱 Contactar por WhatsApp</a>` : ""}
+              `;
+            }
+          }
+
+          div.innerHTML = `
+            <div class="info-pedido">
+              <strong>Pedido ID:</strong> ${venta.pedidoId || id}<br>
+              <strong>Estado:</strong> ${venta.estado}<br>
+              <strong>Fecha:</strong> ${new Date(venta.fecha).toLocaleString()}<br>
+              <strong>Método de pago:</strong> ${venta.metodoPago || 'No especificado'}
+            </div>
+
+            <div class="info-pedido">
+              <strong>📦 Productos:</strong>
+              <ul>${productosHTML}</ul>
+            </div>
+
+            <div class="info-pedido">
+              <strong>👤 Comprador:</strong><br>
+              Nombre: ${venta.compradorNombre || 'Desconocido'}<br>
+              Correo: ${venta.compradorEmail || 'No disponible'}<br>
+              Teléfono: ${venta.compradorTelefono || 'No disponible'}
+            </div>
+
+            <div class="info-pedido">
+              <strong>🛍️ Vendedor:</strong><br>
+              ${vendedorHTML}
+            </div>
+          `;
+
+          ventasContainer.appendChild(div);
+        }
+
+      } catch (error) {
+        console.error("Error al cargar ventas:", error);
+        ventasContainer.innerHTML = "";
+        errorMsg.style.display = "block";
+        errorMsg.textContent = error.code === "permission-denied"
+          ? "No tienes permisos para ver estas ventas."
+          : "Error al cargar las ventas. Intenta de nuevo más tarde.";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #fffefc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding-bottom: 100px; /* Para espacio del menú */
+  color: #333;
+}
+
+h1 {
+  margin-top: 20px;
+  color: #e74c3c; /* Más vivo que #c0392b */
+  text-shadow: 1px 1px 3px rgba(231, 76, 60, 0.5);
+  text-align: center;
+}
+
+p {
+  margin-top: 10px;
+  color: #555;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Contenedor de productos con grid para responsividad */
+.products-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 18px;
+  justify-content: center;
+  margin: 20px;
+  width: 95%;
+  max-width: 900px;
+}
+
+/* Tarjeta producto */
+.product-card {
+  background: white;
+  border: 3px solid #e74c3c;
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  word-wrap: break-word;
+}
+
+.product-card:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 20px rgba(231, 76, 60, 0.6);
+}
+
+.product-card img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease;
+}
+
+.product-card img:hover {
+  transform: scale(1.1);
+}
+
+/* Nombre con dos líneas, centrado y sin desbordar */
+.product-card .name {
+  font-weight: 700;
+  color: #e74c3c;
+  margin-top: 10px;
+  font-size: 1.15em;
+  text-shadow: 1px 1px 2px rgba(196, 57, 44, 0.7);
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.product-card .name span.line2 {
+  display: block;
+  font-size: 0.85em;
+}
+
+/* Descripción */
+.product-card .description {
+  font-size: 0.9em;
+  margin-top: 6px;
+  color: #555;
+  min-height: 45px;
+  font-style: italic;
+  overflow-wrap: break-word;
+}
+
+/* Precio */
+.product-card .price {
+  font-weight: 700;
+  color: #27ae60;
+  margin-top: 10px;
+  font-size: 1.05em;
+  text-shadow: 1px 1px 3px rgba(39, 174, 96, 0.5);
+}
+
+/* Menú flotante fijo */
+.menu {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 3px solid black;
+  border-radius: 10px 10px 0 0;
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0;
+  box-shadow: 0 -3px 8px rgba(0,0,0,0.25);
+  z-index: 100;
+}
+
+.opcion {
+  color: black;
+  background-color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.35s ease, color 0.35s ease;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.opcion:hover {
+  background-color: #ff9933;
+  color: white;
+  box-shadow: 0 5px 12px rgba(255, 153, 51, 0.6);
+}
+
+/* ✅ Ventana flotante de compra */
+.ventana-flotante {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-weight: 600;
+  font-size: 15px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ventana-flotante a {
+  background-color: #28a745;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.ventana-flotante a:hover {
+  background-color: #218838;
+}
+
+.cerrar-flotante {
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #a94442;
+  margin-left: auto;
+}
+
+.product-card {
+  min-height: 320px; /* Ajusta este valor si quieres un tamaño distinto */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+#ventanaFlotante {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #00bcd4;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-weight: 600;
+  font-size: 1rem;
+  z-index: 15000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+#ventanaFlotante.mostrar {
+  opacity: 1;
+  pointer-events: auto;
+}

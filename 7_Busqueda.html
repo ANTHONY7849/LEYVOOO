@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leyvo - Búsqueda</title>
+  <link rel="stylesheet" href="7_Busqueda.css" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+</head>
+<body>
+  <h1>Buscar productos</h1>
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Buscar por nombre o palabra clave">
+    <div class="filter-icon" id="filterIcon">⚙️</div>
+  </div>
+
+  <div class="filter-menu" id="filterMenu">
+    <span class="close-btn" id="closeFilter">✖</span>
+    <label>Ordenar por:</label>
+    <button id="asc">Precio: menor a mayor</button>
+    <button id="desc">Precio: mayor a menor</button>
+
+    <label>Filtrar por precio:</label>
+    <input type="number" id="minPrice" placeholder="Mín" min="0">
+    <input type="number" id="maxPrice" placeholder="Máx" min="0">
+    <button id="applyRange">Aplicar Rango</button>
+
+    <label>Modo de venta:</label>
+    <select id="modoVentaSelect">
+      <option value="">Todos</option>
+      <option value="vender">Vender</option>
+      <option value="interesados">Interesados</option>
+    </select>
+    <button id="applyMode">Filtrar Modo</button>
+  </div>
+
+  <div class="products-list" id="productList">Cargando productos...</div>
+
+  <div class="menu">
+    <a href="2_Inicio.html" class="opcion">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html" class="opcion active">🔍<br>Búsqueda</a>
+    <a href="3_Tu.html" class="opcion">👤<br>Tú</a>
+    <a href="6_editor.html" class="opcion">📝<br>Mis Publicaciones</a>
+    <a href="9_Carrito.html" class="opcion">🛒<br>Carrito</a>
+  </div>
+
+  <div id="modalProducto" class="modal" style="display:none;">
+    <div class="modalContent">
+      <h2 id="modalNombre"></h2>
+      <p id="modalDescripcion"></p>
+      <div id="modalFotos"></div>
+      <p id="modalPrecio"></p>
+      <p id="modalVendedor"></p>
+      <button id="btnComprar">Comprar</button>
+      <button id="btnCerrarModal">Cerrar</button>
+    </div>
+  </div>
+
+  <script type="module" src="7_Busqueda.js"></script>
+</body>
+</html>

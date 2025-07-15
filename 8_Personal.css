@@ -1,0 +1,102 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f9f6f0;
+  margin: 0;
+  padding: 20px;
+  color: #5a3a10;
+}
+.contenedor-datos {
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff3e0;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgb(219 172 59 / 0.5);
+}
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #8a4a10;
+}
+label {
+  font-weight: 700;
+  display: block;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 1rem;
+  border: 1px solid #b88e2f;
+  border-radius: 4px;
+  background: #fffbe6;
+  color: #5a3a10;
+}
+input[readonly] {
+  background: #f0e1b8;
+  cursor: not-allowed;
+}
+button {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  background-color: #dda838;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.3s ease;
+}
+button:hover {
+  background-color: #b88e2f;
+}
+.btn-pequeño {
+  width: auto;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+.flex-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.flex-row button {
+  flex: 1;
+}
+/* Ventana flotante para cambio de contraseña */
+.ventana-flotante {
+  position: fixed;
+  top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.contenido-flotante {
+  background: #fff3e0;
+  padding: 20px;
+  border-radius: 8px;
+  width: 320px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+.contenido-flotante h3 {
+  margin-top: 0;
+  color: #8a4a10;
+  text-align: center;
+}
+.contenido-flotante input {
+  margin: 8px 0;
+}
+.contenido-flotante button {
+  width: 48%;
+  margin-top: 10px;
+}
+.contenido-flotante .btn-cerrar {
+  background-color: #b88e2f;
+  color: white;
+}

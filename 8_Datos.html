@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Datos - Leyvo</title>
+  <link rel="stylesheet" href="8_Datos.css" />
+  <style>
+    /* Estilo para el botón regresar */
+    .btn-regresar {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: #c0392b;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .btn-regresar:hover {
+      background: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <button class="btn-regresar" title="Regresar" id="btnRegresar">← Regresar</button>
+
+  <div class="contenedor-datos">
+    <h2 id="tituloPerfil">Mis Datos</h2>
+
+    <div class="info-usuario">
+      <p><strong>Nombre de usuario:</strong></p>
+      <div class="nombre-usuario-container" id="nombreUsuarioContainer">
+        <span id="nombreUsuario" class="usuario-link">Cargando...</span>
+        <svg class="lapiz-icon" id="editarNombreBtn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" title="Editar nombre">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0L14.13 5.87l3.75 3.75 2.83-2.58z"/>
+        </svg>
+      </div>
+
+      <button id="guardarCambiosBtn" title="Guardar nombre nuevo">Guardar Cambios</button>
+
+      <p id="correoContainer"><strong>Correo:</strong> <span id="correoUsuario">Cargando...</span></p>
+    </div>
+
+    <div style="text-align:center;">
+      <!-- Quité botón cambiar contraseña -->
+      <button id="btnVolverCentro" title="Volver al Centro de Control">Volver al Centro de Control</button>
+    </div>
+
+    <!-- Sección de comentarios -->
+    <div id="comentarios">
+      <h3>Comentarios</h3>
+      <div id="listaComentarios"></div>
+      <textarea id="nuevoComentario" maxlength="90" placeholder="Escribe un comentario (máx 90 caracteres)"></textarea>
+      <div style="margin-top:8px; text-align:center;">
+        <label for="calificacion">Calificación:</label>
+        <select id="calificacion" aria-label="Seleccionar calificación">
+          <option value="1">⭐</option>
+          <option value="2">⭐⭐</option>
+          <option value="3">⭐⭐⭐</option>
+          <option value="4">⭐⭐⭐⭐</option>
+          <option value="5" selected>⭐⭐⭐⭐⭐</option>
+        </select>
+      </div>
+      <button id="btnPublicarComentario" onclick="publicarComentario()">Publicar Comentario</button>
+      <p id="promedioEstrellas" style="margin-top:10px; text-align:center; font-weight:700;"></p>
+    </div>
+  </div>
+
+  <!-- Quité ventana flotante de cambio de contraseña -->
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const nombreUsuario = document.getElementById("nombreUsuario");
+    const editarNombreBtn = document.getElementById("editarNombreBtn");
+    const guardarCambiosBtn = document.getElementById("guardarCambiosBtn");
+    const correoUsuario = document.getElementById("correoUsuario");
+    const btnVolverCentro = document.getElementById("btnVolverCentro");
+    const tituloPerfil = document.getElementById("tituloPerfil");
+    const btnRegresar = document.getElementById("btnRegresar");
+
+    const params = new URLSearchParams(window.location.search);
+    const userIdPerfil = params.get("id");
+
+    let usuarioLogueado = null;
+    let esDueñoPerfil = false;
+
+    // Función para regresar atrás, funciona incluso si no hay historial
+    btnRegresar.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // Si no hay historial, puedes redirigir a una página segura, ej:
+        window.location.href = "4_Usuario.html";
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Debes iniciar sesión para ver esta página.");
+        window.location.href = "3_Tu.html"; // redirigir al login o inicio
+        return;
+      }
+
+      usuarioLogueado = user;
+      const perfilId = userIdPerfil || user.uid;
+      esDueñoPerfil = (!userIdPerfil || user.uid === userIdPerfil);
+
+      // Cambiar título según acceso
+      if (esDueñoPerfil && !userIdPerfil) {
+        tituloPerfil.textContent = "Mis Datos";
+      } else {
+        tituloPerfil.textContent = "Datos del Vendedor";
+      }
+
+      // Mostrar u ocultar controles según sea dueño con permisos o no
+      const isCentroControl = location.pathname.includes("8_Datos.html") && location.search.includes("desdeCentro=true");
+      if (esDueñoPerfil && isCentroControl) {
+        editarNombreBtn.style.display = "inline-block";
+        guardarCambiosBtn.style.display = "none";
+        document.getElementById("correoContainer").style.display = "block";
+      } else {
+        editarNombreBtn.style.display = "none";
+        guardarCambiosBtn.style.display = "none";
+        document.getElementById("correoContainer").style.display = "none";
+      }
+
+      // Cargar datos usuario perfil
+      const docRef = doc(db, "usuarios", perfilId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        nombreUsuario.textContent = data.nombre || "(Sin nombre)";
+        correoUsuario.textContent = data.email || user.email;
+      } else {
+        nombreUsuario.textContent = "(Usuario no encontrado)";
+        correoUsuario.textContent = "";
+      }
+
+      cargarComentarios(perfilId);
+    });
+
+    // Editar nombre usuario
+    editarNombreBtn.addEventListener("click", () => {
+      if (nombreUsuario.tagName === "SPAN") {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = "inputNombreUsuario";
+        input.value = nombreUsuario.textContent;
+        input.maxLength = 50;
+        input.autofocus = true;
+        input.style.color = "#5a3a10";
+        nombreUsuario.replaceWith(input);
+        editarNombreBtn.style.display = "none";
+        guardarCambiosBtn.style.display = "block";
+      }
+    });
+
+    // Guardar nuevo nombre
+    guardarCambiosBtn.addEventListener("click", async () => {
+      const input = document.getElementById("inputNombreUsuario");
+      if (!input || !input.value.trim()) {
+        alert("El nombre no puede estar vacío.");
+        return;
+      }
+      const nuevoNombre = input.value.trim();
+      try {
+        await updateDoc(doc(db, "usuarios", usuarioLogueado.uid), { nombre: nuevoNombre });
+        const span = document.createElement("span");
+        span.id = "nombreUsuario";
+        span.className = "usuario-link";
+        span.textContent = nuevoNombre;
+        input.replaceWith(span);
+        guardarCambiosBtn.style.display = "none";
+        editarNombreBtn.style.display = "inline-block";
+        alert("Nombre actualizado.");
+      } catch (e) {
+        alert("Error al guardar nombre: " + e.message);
+      }
+    });
+
+    // Volver al centro de control
+    btnVolverCentro.addEventListener("click", () => {
+      window.location.href = "4_Usuario.html";
+    });
+
+    // Comentarios
+
+    const listaComentarios = document.getElementById("listaComentarios");
+    const nuevoComentario = document.getElementById("nuevoComentario");
+    const calificacionSelect = document.getElementById("calificacion");
+    const promedioEstrellas = document.getElementById("promedioEstrellas");
+
+    async function cargarComentarios(perfilId) {
+      listaComentarios.innerHTML = "";
+      promedioEstrellas.textContent = "";
+      if (!perfilId) return;
+
+      try {
+        const q = query(collection(db, "comentarios"), where("perfilId", "==", perfilId));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          listaComentarios.innerHTML = "<p style='text-align:center;color:#b95a1c'>No hay comentarios aún.</p>";
+          return;
+        }
+
+        let sumaEstrellas = 0;
+        let contador = 0;
+        querySnapshot.forEach((docu) => {
+          const c = docu.data();
+          sumaEstrellas += Number(c.calificacion || 0);
+          contador++;
+
+          const div = document.createElement("div");
+          div.className = "comentario";
+
+          const usuarioSpan = document.createElement("span");
+          usuarioSpan.className = "usuario-comentario";
+          usuarioSpan.textContent = c.usuarioNombre || "Anónimo";
+          usuarioSpan.title = "Ver datos del usuario";
+          usuarioSpan.style.userSelect = "none";
+          usuarioSpan.onclick = () => {
+            if (c.usuarioId) {
+              window.open(`8_Datos.html?id=${c.usuarioId}`, "_blank");
+            }
+          };
+
+          const estrellas = document.createElement("div");
+          estrellas.className = "estrellas";
+          estrellas.textContent = "⭐".repeat(c.calificacion || 0);
+
+          const texto = document.createElement("p");
+          texto.textContent = c.texto;
+
+          div.appendChild(usuarioSpan);
+          div.appendChild(estrellas);
+          div.appendChild(texto);
+
+          if (usuarioLogueado && (usuarioLogueado.uid === perfilId || usuarioLogueado.uid === c.usuarioId)) {
+            const btnBorrar = document.createElement("button");
+            btnBorrar.textContent = "Eliminar";
+            btnBorrar.onclick = async () => {
+              if (confirm("¿Eliminar este comentario?")) {
+                try {
+                  await deleteDoc(doc(db, "comentarios", docu.id));
+                  alert("Comentario eliminado.");
+                  cargarComentarios(perfilId);
+                } catch (e) {
+                  alert("Error al eliminar comentario: " + e.message);
+                }
+              }
+            };
+            div.appendChild(btnBorrar);
+          }
+
+          listaComentarios.appendChild(div);
+        });
+        if (contador > 0) {
+          const promedio = (sumaEstrellas / contador).toFixed(2);
+          promedioEstrellas.textContent = `Calificación promedio: ${promedio} ⭐`;
+        }
+      } catch (error) {
+        listaComentarios.innerHTML = `<p style="color:red;text-align:center;">Error al cargar comentarios: ${error.message}</p>`;
+      }
+    }
+
+    async function publicarComentario() {
+      const texto = nuevoComentario.value.trim();
+      const calificacion = parseInt(calificacionSelect.value);
+      const perfilId = userIdPerfil || (usuarioLogueado && usuarioLogueado.uid);
+      if (!perfilId) {
+        alert("No se pudo identificar el perfil.");
+        return;
+      }
+      if (texto.length === 0) {
+        alert("El comentario no puede estar vacío.");
+        return;
+      }
+      if (texto.length > 90) {
+        alert("El comentario no puede superar los 90 caracteres.");
+        return;
+      }
+      try {
+        const usuarioDoc = await getDoc(doc(db, "usuarios", usuarioLogueado.uid));
+        let nombre = usuarioLogueado.email || "Anónimo";
+        if (usuarioDoc.exists()) {
+          const data = usuarioDoc.data();
+          if (data.nombre) nombre = data.nombre;
+        }
+
+        await addDoc(collection(db, "comentarios"), {
+          perfilId: perfilId,
+          usuarioId: usuarioLogueado.uid,
+          usuarioNombre: nombre,
+          texto: texto,
+          calificacion: calificacion,
+          timestamp: new Date()
+        });
+        nuevoComentario.value = "";
+        calificacionSelect.value = "5";
+        alert("Comentario publicado.");
+        cargarComentarios(perfilId);
+      } catch (e) {
+        alert("Error al publicar comentario: " + e.message);
+      }
+    }
+
+    window.publicarComentario = publicarComentario;
+  </script>
+</body>
+</html>

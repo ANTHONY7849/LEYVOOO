@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Publicaciones - Leyvo</title>
+  <link rel="stylesheet" href="2_Inicio.css" />
+  <style>
+    .products-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px;
+      align-items: center;
+    }
+    .product-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      max-width: 400px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background-color: #fff;
+      width: 100%;
+      position: relative;
+    }
+    .product-card img {
+      max-width: 100%;
+      max-height: 150px;
+      object-fit: contain;
+      margin-bottom: 8px;
+      border-radius: 6px;
+    }
+    .product-info {
+      margin-bottom: 8px;
+    }
+    .product-info > div, .product-info > p {
+      margin: 4px 0;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    [contenteditable="true"] {
+      outline: 2px solid #28a745;
+      background-color: #eaffea;
+      border-radius: 3px;
+      padding: 2px 4px;
+      min-height: 20px;
+    }
+    .button-group {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+    .button-group button {
+      cursor: pointer;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      flex: 1;
+      transition: background-color 0.3s ease;
+    }
+    .button-group button.delete-btn {
+      background-color: #dc3545;
+    }
+    .button-group button.delete-btn:hover {
+      background-color: #b02a37;
+    }
+    .button-group button.cancel-btn {
+      background-color: #6c757d;
+    }
+    .button-group button.cancel-btn:hover {
+      background-color: #565e64;
+    }
+    .button-group button.save-btn {
+      background-color: #007bff;
+    }
+    .button-group button.save-btn:hover {
+      background-color: #0056b3;
+    }
+    .button-group button.edit-toggle {
+      background-color: #28a745;
+    }
+    .button-group button.edit-toggle:hover {
+      background-color: #1e7e34;
+    }
+    #btnTodasPublicaciones {
+      margin: 10px auto;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      display: block;
+      max-width: 220px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mis Publicaciones</h1>
+  <div id="adminControls"></div>
+  <div class="products-list" id="userProductsList">Cargando productos...</div>
+
+  <div class="menu">
+    <a href="2_Inicio.html" class="opcion">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html" class="opcion">🔍<br>Búsqueda</a>
+    <a href="3_Tu.html" class="opcion">👤<br>Tú</a>
+    <a href="6_editor.html" class="opcion">📝<br>Mis Publicaciones</a>
+    <a href="9_Carrito.html" class="opcion">🛒<br>Carrito</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, query, where, getDocs, doc, deleteDoc, updateDoc, orderBy, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getStorage, ref, deleteObject
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    const container = document.getElementById("userProductsList");
+    const adminControls = document.getElementById("adminControls");
+    let usuarioActivo = null;
+    let esAdmin = false;
+    let mostrandoTodas = false;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        usuarioActivo = user;
+        console.log("Usuario activo:", user.email);
+        esAdmin = (user.email === "anthonypillajo99@gmail.com");
+        mostrarBotonTodasPublicaciones();
+        await loadUserProducts();
+      } else {
+        alert("Debes iniciar sesión.");
+        window.location.href = "3_Tu.html";
+      }
+    });
+
+    function mostrarBotonTodasPublicaciones() {
+      if (esAdmin && adminControls.children.length === 0) {
+        const boton = document.createElement("button");
+        boton.id = "btnTodasPublicaciones";
+        boton.textContent = "📋 Todas las Publicaciones (Admin)";
+
+        boton.addEventListener("click", async () => {
+          if (!mostrandoTodas) {
+            await loadAllProducts();
+            boton.textContent = "👤 Mostrar solo mis publicaciones";
+          } else {
+            await loadUserProducts();
+            boton.textContent = "📋 Todas las Publicaciones (Admin)";
+          }
+          mostrandoTodas = !mostrandoTodas;
+        });
+
+        adminControls.appendChild(boton);
+      }
+    }
+
+    async function loadUserProducts() {
+      container.innerHTML = "Cargando productos...";
+      try {
+        const q = query(
+          collection(db, "productos"),
+          where("ownerId", "==", usuarioActivo.uid),
+          orderBy("timestamp", "desc")
+        );
+        const snapshot = await getDocs(q);
+        container.innerHTML = snapshot.empty ? "<p>No has publicado ningún producto todavía.</p>" : "";
+
+        for (const docSnap of snapshot.docs) {
+          renderCard(docSnap.data(), docSnap.id, true);
+        }
+      } catch (error) {
+        console.error("Error cargando productos:", error);
+        container.innerHTML = "<p>Error al cargar productos.</p>";
+      }
+    }
+
+    async function loadAllProducts() {
+      container.innerHTML = "Cargando todas las publicaciones...";
+      try {
+        const q = query(collection(db, "productos"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        container.innerHTML = snapshot.empty ? "<p>No hay publicaciones.</p>" : "";
+
+        for (const docSnap of snapshot.docs) {
+          const producto = docSnap.data();
+          const id = docSnap.id;
+          const ownerId = producto.ownerId;
+
+          if (!ownerId || typeof ownerId !== "string" || ownerId.trim() === "") {
+            console.warn("Producto sin ownerId válido:", id);
+            continue;
+          }
+
+          let usuarioData = null;
+          try {
+            const usuarioDoc = await getDoc(doc(db, "usuarios", ownerId));
+            if (usuarioDoc.exists()) usuarioData = usuarioDoc.data();
+          } catch (e) {
+            console.error(`Error obteniendo usuario ${ownerId}:`, e);
+          }
+
+          const extraInfo = `
+            <p><strong>Publicado por:</strong> ${escapeHtml(usuarioData?.email || ownerId || "Desconocido")}</p>
+            ${usuarioData?.telefono ? `<p><strong>Teléfono:</strong> ${escapeHtml(usuarioData.telefono)}</p>` : ""}
+            ${usuarioData?.ubicacion ? `<p><strong>Ubicación:</strong> ${escapeHtml(usuarioData.ubicacion)}</p>` : ""}
+          `;
+
+          renderCard(producto, id, esAdmin || (usuarioActivo.uid === ownerId), extraInfo);
+        }
+      } catch (error) {
+        console.error("Error cargando todas las publicaciones:", error);
+        container.innerHTML = "<p>Error al cargar publicaciones.</p>";
+      }
+    }
+
+    function renderCard(producto, id, puedeEditar, extraInfo = "") {
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.dataset.id = id;
+
+      card.innerHTML = `
+        <div class="product-info">
+          <div class="name" contenteditable="false" data-field="name">${escapeHtml(producto.name)}</div>
+        </div>
+        <img src="${producto.images?.[0] || ''}" alt="${escapeHtml(producto.name)}" />
+        <div class="product-info">
+          <p class="description" contenteditable="false" data-field="description">${escapeHtml(producto.description)}</p>
+          <p class="price" contenteditable="false" data-field="price">${producto.price} USD</p>
+          ${extraInfo}
+        </div>
+        <div class="button-group">
+          <button class="delete-btn">🗑 Eliminar</button>
+          ${puedeEditar ? `
+            <button class="edit-toggle">✏️ Editar</button>
+            <button class="save-btn" style="display:none;">💾 Guardar</button>
+            <button class="cancel-btn" style="display:none;">❌ Cancelar</button>
+          ` : ""}
+        </div>
+      `;
+      container.appendChild(card);
+
+      // Eliminar producto
+      card.querySelector(".delete-btn").addEventListener("click", async () => {
+        if (confirm("¿Seguro que quieres eliminar este producto?")) {
+          await eliminarProducto(id, producto.images || []);
+          if (esAdmin) {
+            await loadAllProducts();
+          } else {
+            await loadUserProducts();
+          }
+        }
+      });
+
+      // Editar producto
+      if (puedeEditar) {
+        card.querySelector(".edit-toggle").addEventListener("click", () => toggleEditMode(card, true));
+        card.querySelector(".save-btn").addEventListener("click", async () => {
+          await guardarCambios(card, id);
+          toggleEditMode(card, false);
+        });
+        card.querySelector(".cancel-btn").addEventListener("click", () => {
+          toggleEditMode(card, false);
+          if (esAdmin) loadAllProducts();
+          else loadUserProducts();
+        });
+      }
+    }
+
+    function toggleEditMode(card, editMode) {
+      const fields = card.querySelectorAll('[contenteditable]');
+      fields.forEach(f => {
+        f.contentEditable = editMode ? "true" : "false";
+        f.style.border = editMode ? "1px solid #28a745" : "none";
+        f.style.backgroundColor = editMode ? "#eaffea" : "transparent";
+      });
+      card.querySelector(".edit-toggle").style.display = editMode ? "none" : "inline-block";
+      card.querySelector(".save-btn").style.display = editMode ? "inline-block" : "none";
+      card.querySelector(".cancel-btn").style.display = editMode ? "inline-block" : "none";
+    }
+
+    async function guardarCambios(card, id) {
+      const name = card.querySelector(`[data-field="name"]`).textContent.trim();
+      const desc = card.querySelector(`[data-field="description"]`).textContent.trim();
+      const priceText = card.querySelector(`[data-field="price"]`).textContent.trim();
+      const price = parseFloat(priceText.replace(" USD", ""));
+
+      if (!name || !desc || isNaN(price) || price <= 0) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, "productos", id), { name, description: desc, price });
+        alert("Producto actualizado correctamente.");
+      } catch (e) {
+        console.error("Error actualizando producto:", e);
+        alert("Error al guardar cambios.");
+      }
+    }
+
+    async function eliminarProducto(id, images) {
+      try {
+        for (const url of images) {
+          const path = getStoragePathFromUrl(url);
+          if (path) {
+            try {
+              await deleteObject(ref(storage, path));
+            } catch (err) {
+              console.warn("No se pudo borrar imagen (puede que ya no exista):", path);
+            }
+          }
+        }
+        await deleteDoc(doc(db, "productos", id));
+        alert("Producto eliminado.");
+      } catch (err) {
+        console.error("Error eliminando producto:", err);
+        alert("Error al eliminar.");
+      }
+    }
+
+    // Extrae el path válido para Storage desde la URL pública
+    function getStoragePathFromUrl(url) {
+      try {
+        const parts = url.split("/o/");
+        if (parts.length < 2) return null;
+        return decodeURIComponent(parts[1].split("?")[0]);
+      } catch {
+        return null;
+      }
+    }
+
+    // Escapa HTML para prevenir XSS
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

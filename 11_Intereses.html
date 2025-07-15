@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tus Intereses</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fffefc;
+      margin: 0;
+      padding-bottom: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 90%;
+      padding: 20px;
+      text-align: center;
+    }
+    h2 {
+      color: #c0392b;
+      margin-bottom: 20px;
+    }
+    .notificacion {
+      background: #fff;
+      border: 2px solid #f5cba7;
+      border-radius: 12px;
+      margin: 15px 0;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .notificacion:hover {
+      transform: translateY(-4px);
+    }
+    .notificacion img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 10px;
+      margin: 15px 0;
+    }
+    .notificacion span {
+      font-weight: bold;
+    }
+    .estado-aceptado { color: green; font-weight: bold; }
+    .estado-rechazado { color: red; font-weight: bold; }
+    .estado-pendiente { color: orange; font-weight: bold; }
+    .whatsapp-link {
+      color: #25D366;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .whatsapp-link:hover {
+      text-decoration: underline;
+    }
+    .boton-eliminar {
+      display: inline-block;
+      margin-top: 10px;
+      background-color: #e74c3c;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .boton-eliminar:hover {
+      background-color: #c0392b;
+    }
+    .menu {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ffd699;
+      border: 2px solid black;
+      border-radius: 10px 10px 0 0;
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    .opcion {
+      color: black;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Mis Solicitudes de Interés</h2>
+    <div id="notificaciones">Cargando solicitudes...</div>
+  </div>
+
+  <div class="menu">
+    <a href="2_Inicio.html" class="opcion">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html" class="opcion">🔍<br>Búsqueda</a>
+    <a href="4_Usuario.html" class="opcion">👤<br>Tú</a>
+    <a href="6_editor.html" class="opcion">📝<br>Mis publicaciones</a>
+    <a href="9_Carrito.html" class="opcion">🛒<br>Carrito</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { firebaseConfig } from './config.js';
+
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const contenedor = document.getElementById("notificaciones");
+
+    function estadoHtml(estado) {
+      if (estado === "aceptado") return "<span class='estado-aceptado'>✅ Aceptado</span>";
+      if (estado === "rechazado") return "<span class='estado-rechazado'>❌ Rechazado</span>";
+      return "<span class='estado-pendiente'>⏳ Pendiente</span>";
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "3_Tu.html";
+        return;
+      }
+
+      try {
+        const interesadosRef = collection(db, "interesados");
+        const q = query(interesadosRef, where("usuarioId", "==", user.uid));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          contenedor.innerHTML = "<p>No tienes notificaciones aún.</p>";
+          return;
+        }
+
+        contenedor.innerHTML = "";
+
+        for (const docu of snapshot.docs) {
+          const data = docu.data();
+          const estado = data.estado || "pendiente";
+          const docId = docu.id;
+
+          let nombreProducto = "Producto";
+          let imgProducto = null;
+
+          try {
+            const productoDoc = await getDoc(doc(db, "productos", data.productoId));
+            if (productoDoc.exists()) {
+              const productoData = productoDoc.data();
+              nombreProducto = productoData.name || "Producto";
+              if (productoData.images && productoData.images.length > 0) {
+                imgProducto = productoData.images[0];
+              }
+            }
+          } catch (e) {
+            console.warn("Error obteniendo producto", e);
+          }
+
+          let contactoHtml = "";
+          if (estado === "aceptado") {
+            const datos = data.datosInteresado || {};
+            if (data.compartirTelefono && datos.telefono) {
+              const telefonoWa = datos.telefono.replace(/^0/, "");
+              contactoHtml += `<p>📱 <a class="whatsapp-link" href="https://wa.me/593${telefonoWa}" target="_blank">${datos.telefono} <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="height:20px;vertical-align:middle;"></a></p>`;
+            }
+            if (data.compartirCorreo && datos.correo) {
+              contactoHtml += `<p>✉️ Correo: <strong>${datos.correo}</strong></p>`;
+            }
+            if (!contactoHtml) {
+              contactoHtml = "<p>No compartieron datos adicionales.</p>";
+            }
+          }
+
+          const noti = document.createElement("div");
+          noti.className = "notificacion";
+          noti.innerHTML = `
+            <p>📦 Producto: <span>${nombreProducto}</span></p>
+            <p>📢 Estado: ${estadoHtml(estado)}</p>
+            ${imgProducto ? `<img src="${imgProducto}" alt="${nombreProducto}">` : ""}
+            ${contactoHtml}
+            <button class="boton-eliminar">🗑️ Eliminar</button>
+          `;
+
+          noti.querySelector(".boton-eliminar").addEventListener("click", async () => {
+            if (confirm("¿Estás seguro de eliminar esta solicitud?")) {
+              await deleteDoc(doc(db, "interesados", docId));
+              noti.remove();
+              if (contenedor.children.length === 0) {
+                contenedor.innerHTML = "<p>No tienes notificaciones aún.</p>";
+              }
+            }
+          });
+
+          contenedor.appendChild(noti);
+        }
+      } catch (error) {
+        console.error("Error cargando intereses:", error);
+        contenedor.innerHTML = "<p>Error cargando las solicitudes. Intenta recargar la página.</p>";
+      }
+    });
+  </script>
+</body>
+</html>

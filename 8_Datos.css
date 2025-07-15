@@ -1,0 +1,302 @@
+/* 8_Datos.css */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #fff8f0;
+  color: #5a3a10;
+  margin: 0; 
+  padding: 0 16px 40px;
+}
+
+.contenedor-datos {
+  max-width: 520px;
+  margin: 30px auto;
+  background: #fff3e0;
+  padding: 24px 20px 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(252, 166, 82, 0.4);
+}
+
+h2#tituloPerfil {
+  text-align: center;
+  color: #b95a1c;
+  font-weight: 900;
+  font-size: 2rem;
+  margin-bottom: 18px;
+  text-shadow: 0 0 10px #fca652aa;
+}
+
+.info-usuario {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.nombre-usuario-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.nombre-usuario-container span,
+.nombre-usuario-container input {
+  font-size: 1.3rem;
+  font-weight: 900;
+  background-color: rgba(252, 166, 82, 0.45);
+  padding: 10px 16px;
+  user-select: none;
+  border-radius: 14px;
+  border: none;
+  outline: none;
+  color: #5a3a10;
+  min-width: 220px;
+}
+
+.nombre-usuario-container span.usuario-link {
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.nombre-usuario-container span.usuario-link:hover {
+  color: #fca652;
+}
+
+.lapiz-icon {
+  width: 26px; 
+  height: 26px; 
+  cursor: pointer;
+  fill: #b95a1c; 
+  transition: fill 0.3s ease;
+  vertical-align: middle;
+  margin-left: 12px;
+}
+
+.lapiz-icon:hover { 
+  fill: #fca652; 
+}
+
+#guardarCambiosBtn {
+  width: auto;
+  padding: 10px 22px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #6f3b0c;
+  background: #fca652;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px #b95a1caa;
+  margin: 10px auto 20px;
+  display: none;
+  transition: background-color 0.3s ease;
+  display: block;
+}
+
+#guardarCambiosBtn:hover {
+  background-color: #b95a1c;
+  color: #fff;
+  box-shadow: 0 10px 24px #fca652;
+}
+
+#btnCambiarContrasena, button#btnVolverCentro {
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 8px 20px;
+  border-radius: 22px;
+  border: 2px solid #fca652;
+  background-color: transparent;
+  color: #b95a1c;
+  cursor: pointer;
+  margin: 6px 10px 20px 10px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  display: inline-block;
+}
+
+#btnCambiarContrasena:hover, button#btnVolverCentro:hover {
+  background-color: #fca652;
+  color: #fff;
+}
+
+#comentarios {
+  margin-top: 30px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#comentarios h3 {
+  text-align: center;
+  color: #b95a1c;
+  font-weight: 800;
+  font-size: 1.6rem;
+  margin-bottom: 18px;
+  text-shadow: 0 0 6px #fca652cc;
+}
+
+#listaComentarios {
+  margin-bottom: 16px;
+}
+
+.comentario {
+  background: #fff4db;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(252, 166, 82, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.comentario:hover {
+  box-shadow: 0 4px 14px rgba(252, 166, 82, 0.55);
+}
+
+.comentario .usuario-comentario {
+  font-weight: 800;
+  color: #b95a1c;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-block;
+  margin-bottom: 6px;
+  transition: color 0.3s ease;
+}
+
+.comentario .usuario-comentario:hover {
+  color: #fca652;
+}
+
+.estrellas {
+  color: gold;
+  font-size: 1.3em;
+  margin-bottom: 8px;
+}
+
+.comentario button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background-color: #fca652;
+  color: #6f3b0c;
+  border: none;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px #b95a1caa;
+  transition: background-color 0.3s ease;
+}
+
+.comentario button:hover {
+  background-color: #b95a1c;
+  color: #fff;
+}
+
+textarea#nuevoComentario {
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 2px solid #fca652;
+  box-shadow: inset 0 0 6px #fca65288;
+  resize: none;
+  height: 70px;
+  padding: 10px 14px;
+  color: #5a3a10;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+select#calificacion {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 2px solid #fca652;
+  font-size: 1.1rem;
+  color: #b95a1c;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff3e0;
+  margin-left: 6px;
+}
+
+button#btnPublicarComentario {
+  display: block;
+  margin: 16px auto 0 auto;
+  padding: 12px 30px;
+  font-weight: 900;
+  font-size: 1.2rem;
+  border-radius: 28px;
+  border: none;
+  background-color: #b95a1c;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 25px #fca652cc;
+  transition: background-color 0.3s ease;
+}
+
+button#btnPublicarComentario:hover {
+  background-color: #fca652;
+  color: #6f3b0c;
+}
+
+/* Ventana flotante cambio de contraseña */
+.ventana-flotante {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.contenido-flotante {
+  background: #fff3e0;
+  border-radius: 16px;
+  padding: 30px 24px;
+  box-shadow: 0 8px 20px rgba(252, 166, 82, 0.5);
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  color: #5a3a10;
+}
+
+.contenido-flotante input {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 2px solid #fca652;
+  outline: none;
+  color: #5a3a10;
+  box-sizing: border-box;
+}
+
+.contenido-flotante button {
+  margin: 12px 8px 0 8px;
+  padding: 10px 22px;
+  border-radius: 24px;
+  border: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.contenido-flotante button:first-of-type {
+  background-color: #b95a1c;
+  color: #fff;
+  box-shadow: 0 6px 18px #fca652cc;
+}
+
+.contenido-flotante button:first-of-type:hover {
+  background-color: #fca652;
+  color: #6f3b0c;
+}
+
+.contenido-flotante button:last-of-type {
+  background-color: #fca652;
+  color: #6f3b0c;
+  box-shadow: 0 6px 18px #b95a1caa;
+}
+
+.contenido-flotante button:last-of-type:hover {
+  background-color: #b95a1c;
+  color: #fff;
+}

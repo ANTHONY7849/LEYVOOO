@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leyvo - Pago</title>
+
+  <link rel="stylesheet" href="9_Pago.css" />
+  <style>
+    /* Botón fijo pequeño solo flecha, sin moverse ni ocupar espacio */
+    #btnRegresar {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      background-color: #B22222;
+      color: white;
+      font-weight: 700;
+      font-size: 1.4rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: background-color 0.3s ease;
+      padding: 0;
+      line-height: 1;
+    }
+
+    #btnRegresar:hover {
+      background-color: #8B1A1A;
+    }
+
+    body {
+      padding-top: 60px; /* evita que título se tape */
+      font-family: 'Segoe UI', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Botón fijo con solo la flecha, sin texto -->
+  <button id="btnRegresar" onclick="window.location.href='9_Carrito.html'">&larr;</button>
+
+  <h1>Confirmar Pago</h1>
+
+  <div class="vendedores" id="listaVendedores">
+    <p>Cargando vendedores...</p>
+  </div>
+
+  <div class="resumen" id="resumenCarrito">
+    <p>Selecciona vendedores para ver el resumen.</p>
+  </div>
+
+  <div class="advertencia">
+    ⚠️ <strong>Importante:</strong> Leyvo no realiza ni gestiona pagos. La plataforma únicamente facilita el contacto entre compradores y vendedores.
+    Toda transacción debe ser coordinada directamente entre ambas partes, acordando presencialmente el lugar, la hora y el método de pago. 
+    Elige el método solo como referencia para el vendedor.
+  </div>
+
+  <label for="metodoPago">Método de pago:</label><br>
+  <select id="metodoPago">
+    <option value="Transferencia">Transferencia</option>
+    <option value="Efectivo">Efectivo</option>
+    <option value="Otro">Otro</option>
+  </select>
+
+  <br><br>
+  <button id="btnConfirmar" disabled>Confirmar Compra</button>
+
+  <div class="error" id="errorLimite" style="display:none;">
+    No puedes comprar a más de 15 vendedores diferentes en una sola compra.
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, collection
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const listaVendedoresDiv = document.getElementById("listaVendedores");
+    const resumen = document.getElementById("resumenCarrito");
+    const metodoPago = document.getElementById("metodoPago");
+    const btnConfirmar = document.getElementById("btnConfirmar");
+    const errorLimite = document.getElementById("errorLimite");
+
+    let usuarioActual = null;
+    let productosCarrito = [];
+    let vendedoresUnicos = [];
+    let vendedoresSeleccionados = new Set();
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        usuarioActual = user;
+        await cargarCarrito();
+      } else {
+        alert("Debes iniciar sesión para completar el pago.");
+        window.location.href = "3_Tu.html";
+      }
+    });
+
+    async function cargarCarrito() {
+      try {
+        const docRef = doc(db, "carrito", usuarioActual.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          productosCarrito = docSnap.data().productos || [];
+          if (productosCarrito.length === 0) {
+            resumen.innerHTML = "<p>Tu carrito está vacío.</p>";
+            listaVendedoresDiv.innerHTML = "";
+            btnConfirmar.disabled = true;
+            return;
+          }
+          await cargarVendedores();
+        } else {
+          resumen.innerHTML = "<p>Tu carrito está vacío.</p>";
+          listaVendedoresDiv.innerHTML = "";
+          btnConfirmar.disabled = true;
+        }
+      } catch (error) {
+        console.error("Error al cargar carrito:", error);
+        resumen.innerHTML = "<p>Error al cargar tu carrito.</p>";
+        listaVendedoresDiv.innerHTML = "";
+        btnConfirmar.disabled = true;
+      }
+    }
+
+    async function cargarVendedores() {
+      const mapaVendedores = new Map();
+      // Extraemos IDs únicos de vendedores de productos
+      productosCarrito.forEach(p => {
+        const vid = p.ownerId || "desconocido";
+        if (!mapaVendedores.has(vid)) {
+          mapaVendedores.set(vid, { id: vid, nombre: null });
+        }
+      });
+
+      // Obtenemos nombre real de cada vendedor desde Firestore
+      const promesas = Array.from(mapaVendedores.keys()).map(async vid => {
+        if (vid === "desconocido") {
+          mapaVendedores.get(vid).nombre = "Desconocido";
+          return;
+        }
+        try {
+          const docUsuario = await getDoc(doc(db, "usuarios", vid));
+          if (docUsuario.exists()) {
+            const data = docUsuario.data();
+            mapaVendedores.get(vid).nombre = data.nombre || vid;
+          } else {
+            mapaVendedores.get(vid).nombre = vid;
+          }
+        } catch (error) {
+          console.error("Error al obtener nombre del vendedor:", error);
+          mapaVendedores.get(vid).nombre = vid;
+        }
+      });
+
+      await Promise.all(promesas);
+
+      vendedoresUnicos = Array.from(mapaVendedores.values());
+      vendedoresSeleccionados = new Set(vendedoresUnicos.map(v => v.id));
+
+      if (vendedoresUnicos.length === 0) {
+        listaVendedoresDiv.innerHTML = "<p>No hay vendedores en el carrito.</p>";
+        btnConfirmar.disabled = true;
+        return;
+      }
+
+      let html = "<strong>Selecciona los vendedores a quienes deseas comprar:</strong><br>";
+      vendedoresUnicos.forEach(v => {
+        html += `<label><input type="checkbox" value="${v.id}" checked> ${v.nombre}</label><br>`;
+      });
+      listaVendedoresDiv.innerHTML = html;
+
+      btnConfirmar.disabled = false;
+      errorLimite.style.display = "none";
+
+      const checkboxes = listaVendedoresDiv.querySelectorAll("input[type=checkbox]");
+      checkboxes.forEach(chk => {
+        chk.addEventListener("change", () => {
+          if (chk.checked) {
+            vendedoresSeleccionados.add(chk.value);
+          } else {
+            vendedoresSeleccionados.delete(chk.value);
+          }
+          validarSeleccion();
+          actualizarResumen();
+        });
+      });
+
+      actualizarResumen();
+      validarSeleccion();
+    }
+
+    function validarSeleccion() {
+      if (vendedoresSeleccionados.size > 15) {
+        btnConfirmar.disabled = true;
+        errorLimite.style.display = "block";
+      } else if (vendedoresSeleccionados.size === 0) {
+        btnConfirmar.disabled = true;
+        errorLimite.style.display = "none";
+      } else {
+        btnConfirmar.disabled = false;
+        errorLimite.style.display = "none";
+      }
+    }
+
+    function actualizarResumen() {
+      const productosFiltrados = productosCarrito.filter(p =>
+        vendedoresSeleccionados.has(p.ownerId || "desconocido")
+      );
+
+      if (productosFiltrados.length === 0) {
+        resumen.innerHTML = "<p>No hay productos seleccionados para mostrar.</p>";
+        return;
+      }
+
+      let html = "<h3>Resumen del pedido:</h3><ul>";
+      let total = 0;
+      productosFiltrados.forEach(p => {
+        html += `<li><strong>${p.name}</strong> - ${p.price} USD</li>`;
+        total += Number(p.price);
+      });
+      html += `</ul><p><strong>Total:</strong> ${total.toFixed(2)} USD</p>`;
+      resumen.innerHTML = html;
+    }
+
+    btnConfirmar.addEventListener("click", async () => {
+      if (!usuarioActual) return alert("Debes iniciar sesión.");
+
+      if (vendedoresSeleccionados.size === 0) return alert("Debes seleccionar al menos un vendedor.");
+
+      const productosCompra = productosCarrito.filter(p =>
+        vendedoresSeleccionados.has(p.ownerId || "desconocido")
+      );
+      if (productosCompra.length === 0) return alert("No hay productos para comprar de los vendedores seleccionados.");
+
+      const pedidoId = crypto.randomUUID();
+
+      // Obtener teléfono desde Firestore
+      let telefonoComprador = "No disponible";
+      try {
+        const docUsuario = await getDoc(doc(db, "usuarios", usuarioActual.uid));
+        if (docUsuario.exists()) {
+          telefonoComprador = docUsuario.data().telefono || "No disponible";
+        }
+      } catch (error) {
+        console.error("Error al obtener teléfono del usuario:", error);
+      }
+
+      // Obtener IDs únicos de vendedores
+      const vendedoresIds = Array.from(new Set(productosCompra.map(p => p.ownerId || "desconocido")));
+
+      const productosConVendedor = productosCompra.map(p => ({
+        ...p,
+        vendedorId: p.ownerId || "desconocido"
+      }));
+
+      const pedido = {
+        compradorId: usuarioActual.uid,
+        compradorEmail: usuarioActual.email,
+        compradorNombre: usuarioActual.displayName || usuarioActual.email,
+        compradorTelefono: telefonoComprador,
+        metodoPago: metodoPago.value,
+        estado: "Comprado",
+        fecha: Date.now(),
+        pedidoId,
+        productos: productosConVendedor,
+        ownerIds: vendedoresIds  // <-- Campo agregado para reglas Firestore
+      };
+
+      try {
+        await setDoc(doc(collection(db, "ventas")), pedido);
+        alert("Compra realizada correctamente.");
+
+        // Guardar carrito actualizado (productos no comprados)
+        const productosRestantes = productosCarrito.filter(p =>
+          !vendedoresSeleccionados.has(p.ownerId || "desconocido")
+        );
+        await setDoc(doc(db, "carrito", usuarioActual.uid), { productos: productosRestantes });
+
+        window.location.href = "2_Inicio.html";
+      } catch (err) {
+        console.error("Error al guardar el pedido:", err);
+        alert("Hubo un error al guardar tu pedido.");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Centro de Control</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #fffefc;
+    font-family: Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 15px 100px;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  .container {
+    background-color: white;
+    border: 2px solid black;
+    border-radius: 12px;
+    padding: 30px 40px;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    text-align: center;
+
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px 30px;
+  }
+  h2 {
+    grid-column: 1 / -1; /* Título ocupa toda la fila */
+    color: #c0392b;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 2rem;
+  }
+  .option {
+    background-color: #f2f2f2;
+    border-radius: 10px;
+    padding: 20px 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: black;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    user-select: none;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  }
+  .option:hover {
+    background-color: #e0e0e0;
+  }
+  .arrow {
+    font-size: 20px;
+    color: #888;
+    margin-left: 10px;
+  }
+  #linkAdminUsuarios {
+    display: none;
+    background-color: #fdecea;
+    border: 2px solid #c0392b;
+    color: #c0392b;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 10px;
+    text-decoration: none;
+    padding: 20px 15px;
+    justify-content: center;
+    align-items: center;
+  }
+  #linkAdminUsuarios:hover {
+    background-color: #f9d6d0;
+  }
+  .logout-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    margin-top: 30px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  .logout-btn:hover {
+    background-color: #c0392b;
+  }
+  .menu {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffd699;
+    border: 2px solid black;
+    border-radius: 10px 10px 0 0;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+  }
+  .opcion {
+    color: black;
+    padding: 10px 15px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, transform 0.3s;
+    user-select: none;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+  }
+  .opcion:hover {
+    background-color: #ff9933;
+    color: white;
+    transform: scale(1.05);
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Centro de control de usuario">
+    <h2>Centro de Control</h2>
+
+    <a class="option" href="8_Personal.html" role="link" aria-label="Mis Datos">
+      Mis Datos <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <a class="option" href="10_Pedidos.html" role="link" aria-label="Productos de interés">
+      Solicitudes de Interes <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <a class="option" href="11_Vendidos.html" role="link" aria-label="Productos vendidos">
+      Productos vendidos <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <a class="option" href="5_Productos.html" role="link" aria-label="Mis productos">
+      Subir Productos <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <a class="option" href="11_Intereses.html" role="link" aria-label="Mis solicitudes de compra">
+      Productos de Interes <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <a class="option" href="8_Datos.html" role="link" aria-label="Comentarios">
+      Comentarios <span class="arrow" aria-hidden="true">➡️</span>
+    </a>
+
+    <!-- Enlace solo para admin -->
+    <a id="linkAdminUsuarios" href="admin_usuarios.html" role="link" aria-label="Administrar Usuarios">
+      ⚙️ Administrar Usuarios
+    </a>
+  </div>
+
+  <button class="logout-btn" id="btnCerrarSesion" aria-label="Cerrar sesión">Cerrar sesión</button>
+
+  <nav class="menu" aria-label="Menú principal">
+    <a href="2_Inicio.html" class="opcion" role="link" aria-label="Inicio">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html" class="opcion" role="link" aria-label="Búsqueda">🔍<br>Búsqueda</a>
+    <a href="4_Usuario.html" class="opcion" role="link" aria-label="Tú">👤<br>Tú</a>
+    <a href="6_editor.html" class="opcion" role="link" aria-label="Mis publicaciones">📝<br>Mis publicaciones</a>
+    <a href="9_Carrito.html" class="opcion" role="link" aria-label="Carrito">🛒<br>Carrito</a>
+  </nav>
+
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from './config.js';
+
+    // Evita inicializar Firebase varias veces
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+    const auth = getAuth(app);
+
+    const ADMIN_EMAIL = "anthonypillajo99@gmail.com";
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "3_Tu.html"; // Redirige si no está autenticado
+      } else {
+        if (user.email === ADMIN_EMAIL) {
+          document.getElementById("linkAdminUsuarios").style.display = "flex";
+        }
+      }
+    });
+
+    document.getElementById("btnCerrarSesion").addEventListener("click", () => {
+      if (confirm("¿Deseas cerrar la sesión?")) {
+        signOut(auth).then(() => {
+          window.location.href = "3_Tu.html";
+        }).catch(error => {
+          console.error("Error al cerrar sesión:", error);
+          alert("Error al cerrar sesión, revisa la consola.");
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Productos - Leyvo</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="5_Productos.css" />
+  <style>
+    .contador {
+      font-size: 0.85em;
+      color: #666;
+      text-align: right;
+      margin: 3px 0 10px 0;
+      font-family: Arial, sans-serif;
+      user-select: none;
+    }
+
+    .modo-venta p {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+      user-select: none;
+    }
+
+    .modo-venta label {
+      display: block;
+      margin-bottom: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    .modo-venta input[type="radio"] {
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .explicacion {
+      font-size: 0.85rem;
+      color: #555;
+      margin-left: 26px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Botón regresar -->
+  <button id="btn-regresar" title="Regresar al centro de control">&larr;</button>
+
+  <div class="container">
+    <div class="upload-row">
+      <div class="upload-box">
+        <span>+</span>
+        <input type="file" id="img1" accept="image/*" />
+      </div>
+      <div class="upload-box">
+        <span>+</span>
+        <input type="file" id="img2" accept="image/*" />
+      </div>
+      <div class="upload-box">
+        <span>+</span>
+        <input type="file" id="img3" accept="image/*" />
+      </div>
+    </div>
+
+    <input
+      type="text"
+      id="nombre"
+      placeholder="Nombre del producto (máx 25 caracteres)"
+      maxlength="25"
+    />
+    <div id="contador-nombre" class="contador">25 caracteres restantes</div>
+
+    <textarea
+      id="descripcion"
+      placeholder="Descripción (máx 90 caracteres, sin saltos de línea)"
+      maxlength="90"
+      rows="3"
+    ></textarea>
+    <div id="contador-descripcion" class="contador">90 caracteres restantes</div>
+
+    <textarea
+      id="infoAdicional"
+      placeholder="Información adicional (máx 150 caracteres, sin saltos de línea)"
+      maxlength="150"
+      rows="3"
+    ></textarea>
+    <div id="contador-info" class="contador">150 caracteres restantes</div>
+
+    <div class="precio-control">
+      <span style="font-weight: bold">$</span>
+      <input
+        id="input-price"
+        type="number"
+        min="1"
+        value="1"
+        style="width: 80px; text-align: center; border-radius: 8px; border: 1px solid #999; padding: 8px; font-size: 1em;"
+      />
+    </div>
+
+    <!-- Sección modo venta corregida -->
+    <div class="modo-venta" style="margin-top: 20px;">
+      <p>¿Cómo deseas vender?</p>
+      <label>
+        <input type="radio" name="modoVenta" value="vender" required />
+        Vender directamente
+        <div class="explicacion">El producto se vende al primer comprador que acepte y desaparece del listado.</div>
+      </label>
+      <label>
+        <input type="radio" name="modoVenta" value="interesados" required />
+        Aceptar interesados primero
+        <div class="explicacion">Se muestran interesados, puedes elegir a quién vender luego.</div>
+      </label>
+    </div>
+
+    <div class="botones">
+      <button id="btn-publicar">Publicar</button>
+      <button id="btn-cancelar">Cancelar</button>
+    </div>
+  </div>
+
+  <script type="module" src="5_Productos.js"></script>
+
+  <script>
+    document.getElementById("btn-regresar").addEventListener("click", () => {
+      window.location.href = "4_Usuario.html";
+    });
+
+    document.getElementById("btn-cancelar").addEventListener("click", () => {
+      document.getElementById("nombre").value = "";
+      document.getElementById("descripcion").value = "";
+      document.getElementById("infoAdicional").value = "";
+      document.getElementById("input-price").value = 1;
+
+      actualizarContador("nombre", "contador-nombre", 25);
+      actualizarContador("descripcion", "contador-descripcion", 90);
+      actualizarContador("infoAdicional", "contador-info", 150);
+
+      document.querySelectorAll(".upload-box").forEach((box) => {
+        const inputFile = box.querySelector("input[type='file']");
+        inputFile.value = "";
+        box.classList.remove("filled");
+
+        const img = box.querySelector("img");
+        if (img) {
+          img.remove();
+        }
+      });
+    });
+
+    function actualizarContador(idInput, idContador, maxCaracteres) {
+      const input = document.getElementById(idInput);
+      const contador = document.getElementById(idContador);
+      input.addEventListener("input", () => {
+        const restantes = maxCaracteres - input.value.length;
+        contador.textContent = `${restantes} caracteres restantes`;
+      });
+      contador.textContent = `${maxCaracteres} caracteres restantes`;
+    }
+
+    actualizarContador("nombre", "contador-nombre", 25);
+    actualizarContador("descripcion", "contador-descripcion", 90);
+    actualizarContador("infoAdicional", "contador-info", 150);
+
+    // Bloquear salto de línea
+    ["descripcion", "infoAdicional"].forEach(id => {
+      const campo = document.getElementById(id);
+      campo.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") e.preventDefault();
+      });
+    });
+  </script>
+</body>
+</html>

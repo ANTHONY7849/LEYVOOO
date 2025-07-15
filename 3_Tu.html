@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Iniciar Sesión / Registro - Leyvo</title>
+  <link rel="stylesheet" href="3_Tu.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Bienvenido</h2>
+    <div class="tabs">
+      <div class="tab active" id="tabLogin">Iniciar Sesión</div>
+      <div class="tab" id="tabRegister">Registrarse</div>
+    </div>
+
+    <form id="formLogin" class="active">
+      <input type="email" id="loginUserOrEmail" placeholder="Correo electrónico institucional (@epn.edu.ec)" required />
+      <input type="password" id="loginPass" placeholder="Contraseña" required />
+      <button type="submit">Entrar</button>
+
+      <div style="text-align:center; margin-top: 10px;">
+        <a href="#" id="olvideContrasena" style="color:#c0392b;">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      <div style="text-align:center; margin-top: 15px;">
+        <a href="2_Inicio.html" style="color:#c0392b; text-decoration:none;">← Volver al Inicio</a>
+      </div>
+    </form>
+
+    <form id="formRegister">
+      <input type="text" id="regUser" placeholder="Nombre de usuario" required />
+      <input type="email" id="regEmail" placeholder="Correo institucional (@epn.edu.ec)" required />
+
+      <!-- ✅ CAMPO TELÉFONO CON RESTRICCIONES -->
+      <input
+        type="tel"
+        id="regPhone"
+        placeholder="Número de teléfono (10 dígitos)"
+        maxlength="10"
+        pattern="\d{10}"
+        required
+      />
+
+      <input type="password" id="regPass" placeholder="Contraseña" required />
+      <input type="password" id="confirmPass" placeholder="Confirmar contraseña" required />
+      <div id="errorMsg" class="message error"></div>
+      <button type="submit">Registrarse</button>
+      <div style="text-align:center; margin-top: 15px;">
+        <a href="2_Inicio.html" style="color:#c0392b; text-decoration:none;">← Volver al Inicio</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ✅ VALIDACIÓN TELÉFONO SOLO NÚMEROS -->
+  <script>
+    const phoneInput = document.getElementById("regPhone");
+    phoneInput.addEventListener("input", () => {
+      phoneInput.value = phoneInput.value.replace(/\D/g, "").slice(0, 10);
+    });
+  </script>
+
+  <script type="module" src="3_Tu.js"></script>
+</body>
+</html>

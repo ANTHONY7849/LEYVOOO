@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leyvo - Inicio</title>
+  <link rel="stylesheet" href="2_Inicio.css" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <style>
+    .product-card .name {
+      font-weight: 700;
+      color: #e74c3c;
+      margin-top: 10px;
+      font-size: 1.15em;
+      text-shadow: 1px 1px 2px rgba(196, 57, 44, 0.7);
+      line-height: 1.2;
+      text-align: center;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+    .product-card .name span.line2 {
+      display: block;
+      font-size: 0.85em;
+    }
+    #cerrarZoom {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #f44336;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 12000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bienvenido a Leyvo</h1>
+  <p>Explora las publicaciones de otros usuarios:</p>
+
+  <div id="productos-container" class="products-list"></div>
+
+  <div class="menu">
+    <a href="2_Inicio.html" class="opcion">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html" class="opcion">🔍<br>Búsqueda</a>
+    <a href="3_Tu.html" class="opcion">👤<br>Tú</a>
+    <a href="6_editor.html" class="opcion">📝<br>Mis Publicaciones</a>
+    <a href="9_Carrito.html" class="opcion">🛒<br>Carrito</a>
+  </div>
+
+  <div id="modalProducto" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">
+    <div id="modalContent" style="background:#fff; border-radius:15px; max-width:850px; width:90%; max-height:95vh; padding:25px 30px; box-shadow:0 8px 30px rgba(0,0,0,0.5); overflow-y:auto; text-align:center; position:relative;">
+      <h2 id="modalNombre" style="color:#c0392b; margin-bottom:8px;"></h2>
+      <p id="modalDescripcion" style="color:#555; font-size:1em; margin-bottom:15px; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word;"></p>
+      <div id="modalFotos" style="display:flex; justify-content:center; gap:15px; margin-bottom:20px; overflow-x:auto; cursor:pointer;"></div>
+      <p id="modalPrecio" style="font-weight:bold; color:#27ae60; font-size:1.3em; margin-bottom:25px;"></p>
+      <button id="btnComprar" style="background:#00bcd4; color:white; border:none; padding:12px 25px; border-radius:10px; cursor:pointer; margin-right:20px; font-size:1em; font-weight:600;">Comprar</button>
+      <button id="btnCerrarModal" style="background:#f44336; color:white; border:none; padding:12px 25px; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600;">Volver al inicio</button>
+    </div>
+  </div>
+
+  <div id="modalImagenGrande" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:11000; justify-content:center; align-items:center; flex-direction:column;">
+    <button id="cerrarZoom">X</button>
+    <img id="imgGrande" src="" alt="Imagen ampliada" style="max-width:95vw; max-height:95vh; border-radius:12px; box-shadow: 0 0 40px rgba(255,255,255,0.9); transition: transform 0.3s ease; cursor: zoom-in;">
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      orderBy,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const container = document.getElementById("productos-container");
+    const modal = document.getElementById("modalProducto");
+    const modalNombre = document.getElementById("modalNombre");
+    const modalDescripcion = document.getElementById("modalDescripcion");
+    const modalFotos = document.getElementById("modalFotos");
+    const modalPrecio = document.getElementById("modalPrecio");
+    const btnCerrarModal = document.getElementById("btnCerrarModal");
+    const btnComprar = document.getElementById("btnComprar");
+    const modalImgGrande = document.getElementById("modalImagenGrande");
+    const imgGrande = document.getElementById("imgGrande");
+    const cerrarZoom = document.getElementById("cerrarZoom");
+
+    let productoActual = null;
+    let usuarioActual = null;
+
+    function formatNameLines(name) {
+      const words = name.trim().split(" ");
+      if (words.length <= 1) return name;
+      const midpoint = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, midpoint).join(" ");
+      const line2 = words.slice(midpoint).join(" ");
+      return `${line1}<span class="line2">${line2}</span>`;
+    }
+
+    async function mostrarProductos() {
+      try {
+        const q = query(collection(db, "productos"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+        container.innerHTML = "";
+
+        querySnapshot.forEach((docSnap) => {
+          const producto = docSnap.data();
+          producto.id = docSnap.id;
+          const item = document.createElement("div");
+          item.classList.add("product-card");
+
+          const imagenHTML = producto.images?.[0] ? `<img src="${producto.images[0]}" alt="Imagen producto" />` : "";
+
+          item.innerHTML = `
+            ${imagenHTML}
+            <div class="name">${formatNameLines(producto.name)}</div>
+            <div class="description">${producto.description || ""}</div>
+            <div class="price">${producto.price} USD</div>
+          `;
+
+          item.addEventListener("click", async () => {
+            productoActual = producto;
+
+            modalNombre.innerHTML = formatNameLines(producto.name);
+            modalDescripcion.textContent = producto.description || "Sin descripción disponible.";
+            modalFotos.innerHTML = "";
+            const extras = modalFotos.parentElement.querySelectorAll("p.extra-info");
+            extras.forEach(p => p.remove());
+
+            let ownerName = "Desconocido";
+            let ownerUid = null;
+            if (producto.ownerId) {
+              try {
+                const userDoc = await getDoc(doc(db, "usuarios", producto.ownerId));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  ownerName = userData.nombre || userData.email || "Desconocido";
+                  ownerUid = producto.ownerId;
+                }
+              } catch {}
+            }
+
+            if (producto.images && producto.images.length > 0) {
+              producto.images.slice(0, 3).forEach((url) => {
+                const img = document.createElement("img");
+                img.src = url;
+                img.alt = producto.name;
+                img.style.width = "130px";
+                img.style.height = "130px";
+                img.style.objectFit = "cover";
+                img.style.borderRadius = "10px";
+                img.style.boxShadow = "0 3px 8px rgba(0,0,0,0.3)";
+                img.style.cursor = "zoom-in";
+                img.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  imgGrande.src = url;
+                  imgGrande.style.transform = "scale(1)";
+                  modalImgGrande.style.display = "flex";
+                  document.body.style.overflow = "hidden";
+                });
+                modalFotos.appendChild(img);
+              });
+            } else {
+              modalFotos.textContent = "Sin imágenes disponibles";
+            }
+
+            const infoHTML = producto.info && producto.info.trim() !== "" ?
+              `<p class="extra-info" style="color:#555; font-style: italic; margin-top: 15px; white-space: pre-wrap;">${producto.info}</p>` : "";
+
+            const ownerP = document.createElement("p");
+            ownerP.classList.add("extra-info");
+            ownerP.style.color = "#7b1fa2";
+            ownerP.style.fontWeight = "700";
+            ownerP.style.marginTop = "8px";
+            ownerP.style.cursor = "pointer";
+            ownerP.textContent = `Vendedor: ${ownerName}`;
+            ownerP.title = "Ver perfil del vendedor";
+            if (ownerUid) {
+              ownerP.addEventListener("click", () => {
+                window.location.href = `8_Datos.html?id=${ownerUid}`;
+              });
+            }
+
+            modalFotos.insertAdjacentHTML("afterend", infoHTML);
+            modalFotos.parentElement.appendChild(ownerP);
+
+            modalPrecio.textContent = `${producto.price} USD`;
+
+            if (producto.modoVenta === "interesados") {
+              btnComprar.textContent = "Estoy interesado";
+              btnComprar.onclick = async () => {
+                if (!usuarioActual) {
+                  alert("Debes iniciar sesión para expresar interés.");
+                  return;
+                }
+                if (usuarioActual.uid === producto.ownerId) {
+                  alert("No puedes expresar interés en tu propio producto.");
+                  return;
+                }
+
+                try {
+                  const interesadoRef = doc(db, "interesados", usuarioActual.uid + "_" + producto.id);
+                  const interesadoSnap = await getDoc(interesadoRef);
+
+                  if (interesadoSnap.exists()) {
+                    const data = interesadoSnap.data();
+                    if (data.contador >= 3) {
+                      alert("Has superado el número máximo de oportunidades para expresar interés en este producto.");
+                      return;
+                    }
+                    await updateDoc(interesadoRef, {
+                      contador: Number(data.contador) + 1,
+                      lastInterest: serverTimestamp()
+                    });
+                    alert("Tu interés ha sido registrado nuevamente. Oportunidad " + (Number(data.contador) + 1) + " de 3.");
+                  } else {
+                    await setDoc(interesadoRef, {
+                      usuarioId: usuarioActual.uid,
+                      productoId: producto.id,
+                      contador: 1,
+                      firstInterest: serverTimestamp(),
+                      lastInterest: serverTimestamp()
+                    });
+                    alert("Tu interés ha sido registrado. Oportunidad 1 de 3.");
+                  }
+
+                  modal.style.display = "none";
+                  document.body.style.overflow = "auto";
+                } catch (error) {
+                  console.error("Error al registrar interés:", error);
+                  alert("Hubo un error al registrar tu interés.");
+                }
+              };
+            } else {
+              btnComprar.textContent = "Comprar";
+              btnComprar.onclick = async () => {
+                if (!productoActual) return alert("No hay producto seleccionado.");
+                if (!usuarioActual) return alert("Debes iniciar sesión para comprar.");
+                try {
+                  const docRef = doc(db, "carrito", usuarioActual.uid);
+                  const docSnap = await getDoc(docRef);
+                  const productos = docSnap.exists() ? docSnap.data().productos || [] : [];
+
+                  // **Aquí se verifica si el producto ya está en el carrito**
+                  const productoYaEnCarrito = productos.some(p => p.id === productoActual.id);
+                  if (productoYaEnCarrito) {
+                    alert("Este producto ya está en tu carrito. No puedes agregarlo más de una vez.");
+                    return; // Salir sin agregar
+                  }
+
+                  productos.push(productoActual);
+                  await setDoc(docRef, { productos });
+                  window.location.href = "9_Carrito.html";
+                } catch (err) {
+                  console.error("Error al agregar al carrito:", err);
+                  alert("Error al agregar el producto al carrito.");
+                }
+              };
+            }
+
+            modal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+          });
+
+          container.appendChild(item);
+        });
+      } catch (err) {
+        console.error("Error al cargar productos:", err);
+        container.innerHTML = "<p>Error al cargar productos.</p>";
+      }
+    }
+
+    btnCerrarModal.addEventListener("click", () => {
+      modal.style.display = "none";
+      document.body.style.overflow = "auto";
+      productoActual = null;
+    });
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+        document.body.style.overflow = "auto";
+        productoActual = null;
+      }
+    });
+
+    imgGrande.addEventListener("click", (e) => {
+      e.stopPropagation();
+      imgGrande.style.transform = imgGrande.style.transform === "scale(1.6)" ? "scale(1)" : "scale(1.6)";
+    });
+
+    cerrarZoom.addEventListener("click", () => {
+      modalImgGrande.style.display = "none";
+      document.body.style.overflow = "auto";
+      imgGrande.style.transform = "scale(1)";
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      usuarioActual = user;
+      mostrarProductos();
+    });
+  </script>
+</body>
+</html>

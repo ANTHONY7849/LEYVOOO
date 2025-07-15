@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Datos - Leyvo</title>
+  <link rel="stylesheet" href="8_Personal.css" />
+</head>
+<body>
+  <div class="contenedor-datos">
+    <h2>Mis Datos</h2>
+
+    <label for="nombreInput">Nombre de usuario:</label>
+    <input type="text" id="nombreInput" maxlength="50" />
+
+    <label for="correoInput">Correo electrónico:</label>
+    <input type="email" id="correoInput" readonly />
+
+    <label for="telefonoInput">Número de celular:</label>
+    <input type="tel" id="telefonoInput" maxlength="10" pattern="[0-9]{10}" placeholder="Ejemplo: 0991234567" />
+
+    <button id="btnGuardar">Guardar Cambios</button>
+
+    <div class="flex-row">
+      <button id="btnCambiarContrasena" class="btn-pequeño">Cambiar contraseña</button>
+      <button id="btnVolver" class="btn-pequeño">← Volver</button>
+    </div>
+  </div>
+
+  <!-- Ventana flotante para cambiar contraseña -->
+  <div class="ventana-flotante" id="ventanaContrasena" style="display:none;">
+    <div class="contenido-flotante">
+      <h3>Cambiar Contraseña</h3>
+      <input type="password" id="nuevaContrasena" placeholder="Nueva contraseña" />
+      <input type="password" id="repetirContrasena" placeholder="Repite la contraseña" />
+      <div class="flex-row" style="margin-top:10px;">
+        <button onclick="cambiarContrasena()">Actualizar</button>
+        <button class="btn-cerrar" onclick="cerrarVentanaContrasena()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const nombreInput = document.getElementById("nombreInput");
+    const correoInput = document.getElementById("correoInput");
+    const telefonoInput = document.getElementById("telefonoInput");
+    const btnGuardar = document.getElementById("btnGuardar");
+    const btnCambiarContrasena = document.getElementById("btnCambiarContrasena");
+    const btnVolver = document.getElementById("btnVolver");
+
+    const ventanaContrasena = document.getElementById("ventanaContrasena");
+
+    let usuarioActual = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Debes iniciar sesión para ver esta página.");
+        window.location.href = "3_Tu.html"; // redirigir si no hay usuario
+        return;
+      }
+      usuarioActual = user;
+
+      // Cargar datos desde Firestore
+      const docRef = doc(db, "usuarios", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        nombreInput.value = data.nombre || "";
+        correoInput.value = data.correo || user.email || "";
+        telefonoInput.value = data.telefono || "";
+      } else {
+        nombreInput.value = "";
+        correoInput.value = user.email || "";
+        telefonoInput.value = "";
+      }
+    });
+
+    btnGuardar.addEventListener("click", async () => {
+      if (!usuarioActual) return;
+
+      const nuevoNombre = nombreInput.value.trim();
+      const nuevoTelefono = telefonoInput.value.trim();
+
+      if (nuevoNombre.length === 0) {
+        alert("El nombre no puede estar vacío.");
+        return;
+      }
+      // Validar teléfono: solo números y exactamente 10 dígitos (ejemplo: 0991234567)
+      const telefonoValido = /^[0-9]{10}$/.test(nuevoTelefono);
+      if (!telefonoValido) {
+        alert("El número de celular debe tener 10 dígitos numéricos. Ejemplo: 0991234567");
+        return;
+      }
+
+      try {
+        // 1. Actualizar usuario en Firestore
+        await updateDoc(doc(db, "usuarios", usuarioActual.uid), {
+          nombre: nuevoNombre,
+          telefono: nuevoTelefono,
+          correo: correoInput.value // No editable, pero guardamos para seguridad
+        });
+
+        // 2. Actualizar nombre en productos del usuario
+        const productosQuery = query(
+          collection(db, "productos"),
+          where("usuarioId", "==", usuarioActual.uid)
+        );
+        const productosSnapshot = await getDocs(productosQuery);
+        const promProductos = [];
+        productosSnapshot.forEach(docu => {
+          promProductos.push(updateDoc(doc(db, "productos", docu.id), {
+            usuarioNombre: nuevoNombre
+          }));
+        });
+
+        // 3. Actualizar nombre en comentarios del usuario
+        const comentariosQuery = query(
+          collection(db, "comentarios"),
+          where("usuarioId", "==", usuarioActual.uid)
+        );
+        const comentariosSnapshot = await getDocs(comentariosQuery);
+        const promComentarios = [];
+        comentariosSnapshot.forEach(docu => {
+          promComentarios.push(updateDoc(doc(db, "comentarios", docu.id), {
+            usuarioNombre: nuevoNombre
+          }));
+        });
+
+        await Promise.all([...promProductos, ...promComentarios]);
+
+        alert("Datos actualizados correctamente y nombre reflejado en productos y comentarios.");
+      } catch (e) {
+        alert("Error al actualizar datos: " + e.message);
+      }
+    });
+
+    btnCambiarContrasena.addEventListener("click", () => {
+      ventanaContrasena.style.display = "flex";
+    });
+
+    function cerrarVentanaContrasena() {
+      ventanaContrasena.style.display = "none";
+      document.getElementById("nuevaContrasena").value = "";
+      document.getElementById("repetirContrasena").value = "";
+    }
+    window.cerrarVentanaContrasena = cerrarVentanaContrasena;
+
+    async function cambiarContrasena() {
+      const nueva = document.getElementById("nuevaContrasena").value.trim();
+      const repetir = document.getElementById("repetirContrasena").value.trim();
+
+      if (nueva.length < 6) {
+        alert("La contraseña debe tener al menos 6 caracteres.");
+        return;
+      }
+      if (nueva !== repetir) {
+        alert("Las contraseñas no coinciden.");
+        return;
+      }
+      try {
+        await updatePassword(auth.currentUser, nueva);
+        alert("Contraseña actualizada correctamente.");
+        cerrarVentanaContrasena();
+      } catch (error) {
+        alert("Error al cambiar contraseña: " + error.message);
+      }
+    }
+    window.cambiarContrasena = cambiarContrasena;
+
+    btnVolver.addEventListener("click", () => {
+      window.location.href = "4_Usuario.html"; // Cambia a la ruta correcta del centro de control
+    });
+  </script>
+</body>
+</html>

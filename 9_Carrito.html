@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leyvo - Carrito</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      padding-bottom: 120px; /* espacio para menú fijo */
+      background: #fff6f6;
+      color: #333;
+    }
+    h1 {
+      color: #c0392b;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    h2 {
+      text-align: center;
+      color: #555;
+      font-weight: 400;
+      margin-top: 0;
+      margin-bottom: 30px;
+    }
+    #factura {
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(192, 57, 43, 0.25);
+      padding: 25px 30px;
+    }
+    .item-factura {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+    }
+    .item-factura:last-child {
+      border-bottom: none;
+    }
+    .item-factura img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .detalle {
+      flex: 1;
+    }
+    .detalle .nombre {
+      font-weight: 700;
+      font-size: 1.1em;
+      color: #c0392b;
+      margin-bottom: 6px;
+      word-break: break-word;
+      white-space: normal;
+    }
+    .detalle .descripcion {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .precio {
+      font-weight: 600;
+      color: #27ae60;
+      font-size: 1.1em;
+      min-width: 80px;
+      text-align: right;
+    }
+    #total {
+      font-weight: 800;
+      font-size: 1.5em;
+      color: #e74c3c;
+      text-align: right;
+      margin-top: 20px;
+      border-top: 2px solid #c0392b;
+      padding-top: 15px;
+    }
+    .botones-carrito {
+      text-align: center;
+      margin-top: 10px;
+      margin-bottom: 80px;
+    }
+    .botones-carrito button {
+      background: #c0392b;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 10px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 10px;
+      transition: background-color 0.3s ease;
+    }
+    .botones-carrito button:hover {
+      background: #e74c3c;
+    }
+    .empty-message {
+      text-align: center;
+      font-size: 1.2em;
+      color: #999;
+      margin-top: 60px;
+    }
+
+    /* Menú fijo como 2_Inicio.html */
+    .menu {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      border: 3px solid black;
+      border-radius: 10px 10px 0 0;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      box-shadow: 0 -3px 8px rgba(0,0,0,0.25);
+      z-index: 9999;
+    }
+    .menu a {
+      color: black;
+      background-color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.35s ease, color 0.35s ease;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      user-select: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .menu a:hover {
+      background-color: #ff9933;
+      color: white;
+      box-shadow: 0 5px 12px rgba(255, 153, 51, 0.6);
+    }
+
+    /* Estilos ventana historial compras */
+    #ventanaCompras {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      width: 320px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      border-radius: 12px;
+      padding: 15px;
+      display: none;
+      z-index: 10000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #ventanaCompras h3 {
+      margin-top: 0;
+      color: #c0392b;
+      position: relative;
+      padding-right: 30px;
+    }
+    #cerrarVentana {
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-weight: 700;
+      color: #c0392b;
+      background: transparent;
+      border: none;
+      font-size: 1.3em;
+      cursor: pointer;
+      padding: 0 5px;
+      line-height: 1;
+    }
+    #cerrarVentana:hover {
+      color: #e74c3c;
+    }
+    .pedido-container {
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .pedido-detalles {
+      margin-top: 10px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .pedido-detalles div {
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pedido-detalles img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Leyvo</h1>
+  <h2>Tus compras</h2>
+
+  <section id="factura"></section>
+
+  <div class="botones-carrito">
+    <button id="vaciarCarrito">Vaciar carrito</button>
+    <button id="seguirComprando">Seguir comprando</button>
+  </div>
+
+  <div class="menu">
+    <a href="2_Inicio.html">🏠<br>Inicio</a>
+    <a href="7_Busqueda.html">🔍<br>Búsqueda</a>
+    <a href="3_Tu.html">👤<br>Tú</a>
+    <a href="6_editor.html">📝<br>Mis Publicaciones</a>
+    <a href="9_Carrito.html">🛒<br>Carrito</a>
+  </div>
+
+  <button id="btnArticulosComprados" style="display:block; margin:20px auto; background:#2980b9; color:#fff; border:none; padding:12px 20px; border-radius:10px; font-weight:600; cursor:pointer; max-width: 200px;">
+    Artículos comprados
+  </button>
+
+  <div id="ventanaCompras" aria-live="polite" aria-label="Historial de compras"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const factura = document.getElementById('factura');
+    const vaciarCarritoBtn = document.getElementById('vaciarCarrito');
+    const seguirComprandoBtn = document.getElementById('seguirComprando');
+    const ventanaCompras = document.getElementById('ventanaCompras');
+    const btnArticulosComprados = document.getElementById('btnArticulosComprados');
+
+    let usuarioActual = null;
+    let productos = [];
+
+    function renderFactura() {
+      factura.innerHTML = "";
+
+      if (productos.length === 0) {
+        factura.innerHTML = '<p class="empty-message">Tu carrito está vacío.</p>';
+        vaciarCarritoBtn.style.display = 'none';
+        seguirComprandoBtn.style.display = 'none';
+        return;
+      }
+
+      vaciarCarritoBtn.style.display = 'inline-block';
+      seguirComprandoBtn.style.display = 'inline-block';
+
+      let total = 0;
+      productos.forEach((prod, i) => {
+        total += prod.price || 0;
+
+        const item = document.createElement('div');
+        item.className = 'item-factura';
+
+        item.innerHTML = `
+          <img src="${prod.images?.[0] || 'https://via.placeholder.com/90?text=No+Img'}" alt="${prod.name}" />
+          <div class="detalle">
+            <div class="nombre">${prod.name}</div>
+            <div class="descripcion">${prod.description || ''}</div>
+          </div>
+          <div class="precio">${(prod.price || 0).toFixed(2)} USD</div>
+          <button aria-label="Eliminar producto" style="background:#e74c3c; border:none; color:white; border-radius:6px; padding:6px 10px; cursor:pointer; margin-left:10px; font-weight:700;">X</button>
+        `;
+
+        const btnEliminar = item.querySelector('button');
+        btnEliminar.addEventListener('click', () => {
+          productos.splice(i, 1);
+          guardarCarrito();
+          renderFactura();
+        });
+
+        factura.appendChild(item);
+      });
+
+      const totalElem = document.createElement('div');
+      totalElem.id = 'total';
+      totalElem.textContent = `Total a pagar: ${total.toFixed(2)} USD`;
+      factura.appendChild(totalElem);
+    }
+
+    async function guardarCarrito() {
+      if (!usuarioActual) return;
+      const docRef = doc(db, "carrito", usuarioActual.uid);
+      try {
+        await setDoc(docRef, { productos }, { merge: true });
+        console.log("Carrito guardado correctamente");
+      } catch (error) {
+        console.error("Error guardando carrito:", error);
+      }
+    }
+
+    async function cargarCarrito() {
+      if (!usuarioActual) return;
+      const docRef = doc(db, "carrito", usuarioActual.uid);
+      try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          productos = docSnap.data().productos || [];
+        } else {
+          productos = [];
+        }
+        renderFactura();
+      } catch (err) {
+        console.error("Error cargando carrito:", err);
+      }
+    }
+
+    vaciarCarritoBtn.addEventListener('click', () => {
+      if (confirm("¿Estás seguro de vaciar tu carrito?")) {
+        productos = [];
+        guardarCarrito();
+        renderFactura();
+      }
+    });
+
+    seguirComprandoBtn.addEventListener('click', () => {
+      if (!usuarioActual) return;
+      localStorage.setItem('carritoPago', JSON.stringify(productos));
+      localStorage.setItem('compradorUID', usuarioActual.uid);
+      window.location.href = "9_Pago.html";
+    });
+
+    async function cargarPedidos() {
+      if (!usuarioActual) return;
+      const ventasRef = collection(db, "ventas");
+      const q = query(ventasRef, where("compradorId", "==", usuarioActual.uid));
+      try {
+        ventanaCompras.innerHTML = `
+          <h3>
+            Compras realizadas
+            <button id="cerrarVentana" aria-label="Cerrar historial de compras">×</button>
+          </h3>
+        `;
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          ventanaCompras.innerHTML += '<p>No has realizado compras aún.</p>';
+        } else {
+          querySnapshot.forEach((docPedido, index) => {
+            const pedido = docPedido.data();
+
+            const contenedorPedido = document.createElement('div');
+            contenedorPedido.className = 'pedido-container';
+
+            contenedorPedido.innerHTML = `
+              <strong>Pedido ${index + 1}</strong><br>
+              Fecha: ${new Date(pedido.fecha).toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              })}<br>
+              Método de pago: ${pedido.metodoPago || 'No especificado'}<br>
+              Estado: ${pedido.estado || 'Comprado'}<br>
+              Artículos: ${pedido.productos.length}
+            `;
+
+            contenedorPedido.addEventListener('click', () => {
+              const detallesExistentes = contenedorPedido.querySelector('.pedido-detalles');
+              if (detallesExistentes) {
+                detallesExistentes.remove();
+                return;
+              }
+              const detalles = document.createElement('div');
+              detalles.className = 'pedido-detalles';
+
+              pedido.productos.forEach(prod => {
+                const contProd = document.createElement('div');
+
+                const img = document.createElement('img');
+                img.src = prod.images?.[0] || 'https://via.placeholder.com/60?text=No+Img';
+                img.alt = prod.name;
+
+                const info = document.createElement('div');
+                info.innerHTML = `
+                  <strong>${prod.name}</strong><br>
+                  Vendedor: ${prod.vendedorNombre || 'Desconocido'}
+                `;
+
+                contProd.appendChild(img);
+                contProd.appendChild(info);
+                detalles.appendChild(contProd);
+              });
+
+              const estadoFecha = document.createElement('div');
+              estadoFecha.style.marginTop = '12px';
+              estadoFecha.style.fontWeight = '700';
+              estadoFecha.textContent = `Estado: ${pedido.estado || 'Comprado'} | Fecha: ${new Date(pedido.fecha).toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              })}`;
+
+              detalles.appendChild(estadoFecha);
+
+              contenedorPedido.appendChild(detalles);
+            });
+
+            ventanaCompras.appendChild(contenedorPedido);
+          });
+        }
+
+        document.getElementById('cerrarVentana').addEventListener('click', () => {
+          ventanaCompras.style.display = 'none';
+        });
+
+        ventanaCompras.style.display = 'block';
+
+      } catch (error) {
+        console.error("Error cargando pedidos:", error);
+        ventanaCompras.innerHTML += '<p>Error cargando historial de compras.</p>';
+        ventanaCompras.style.display = 'block';
+      }
+    }
+
+    btnArticulosComprados.addEventListener('click', cargarPedidos);
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        usuarioActual = user;
+        cargarCarrito();
+      } else {
+        usuarioActual = null;
+        productos = [];
+        renderFactura();
+        alert("Debes iniciar sesión para ver tu carrito.");
+        window.location.href = "3_Tu.html";
+      }
+    });
+  </script>
+
+</body>
+</html>
